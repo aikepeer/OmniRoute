@@ -15,7 +15,14 @@ import { classifyPaths } from "../../scripts/quality/classify-pr-changes.mjs";
 
 test("pure docs PR → docs only (no code unit/lint bag)", () => {
   const c = classifyPaths(["docs/architecture/QUALITY_GATES.md", "README.md"]);
-  assert.deepEqual(c, { code: false, docs: true, i18n: false, workflow: false, testsOnly: false });
+  assert.deepEqual(c, {
+    code: false,
+    docs: true,
+    i18n: false,
+    workflow: false,
+    nonWorkflowCode: false,
+    testsOnly: false,
+  });
 });
 
 test("openapi under docs/ → docs (contract gates live in docs-sync, not unit)", () => {
@@ -26,7 +33,14 @@ test("openapi under docs/ → docs (contract gates live in docs-sync, not unit)"
 
 test("pure message catalog → i18n only (not full unit suite)", () => {
   const c = classifyPaths(["src/i18n/messages/en.json", "src/i18n/messages/ko.json"]);
-  assert.deepEqual(c, { code: false, docs: false, i18n: true, workflow: false, testsOnly: false });
+  assert.deepEqual(c, {
+    code: false,
+    docs: false,
+    i18n: true,
+    workflow: false,
+    nonWorkflowCode: false,
+    testsOnly: false,
+  });
 });
 
 test("i18n tooling/scripts → i18n + code (tooling can break runtime paths)", () => {
@@ -45,11 +59,19 @@ test("workflow change → workflow + code (gates protect the gates)", () => {
   const c = classifyPaths([".github/workflows/ci.yml"]);
   assert.equal(c.workflow, true);
   assert.equal(c.code, true);
+  assert.equal(c.nonWorkflowCode, false);
 });
 
 test("production source → code", () => {
   const c = classifyPaths(["open-sse/handlers/chatCore.ts", "src/lib/db/core.ts"]);
-  assert.deepEqual(c, { code: true, docs: false, i18n: false, workflow: false, testsOnly: false });
+  assert.deepEqual(c, {
+    code: true,
+    docs: false,
+    i18n: false,
+    workflow: false,
+    nonWorkflowCode: true,
+    testsOnly: false,
+  });
 });
 
 test("mixed docs + code → both flags (jobs union their filters)", () => {
@@ -65,7 +87,14 @@ test("unknown path → code fail-safe (never skip heavy gates by accident)", () 
 
 test("empty change list → all false (nothing to validate)", () => {
   const c = classifyPaths([]);
-  assert.deepEqual(c, { code: false, docs: false, i18n: false, workflow: false, testsOnly: false });
+  assert.deepEqual(c, {
+    code: false,
+    docs: false,
+    i18n: false,
+    workflow: false,
+    nonWorkflowCode: false,
+    testsOnly: false,
+  });
 });
 
 // WS3.1 (v3.8.49 quality plan) — testsOnly powers the hotfix/test-only fast lane:

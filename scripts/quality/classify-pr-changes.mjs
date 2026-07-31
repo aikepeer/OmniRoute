@@ -17,13 +17,14 @@ import { fileURLToPath } from "node:url";
 
 /**
  * @param {string[]} files relative paths from git diff
- * @returns {{ code: boolean, docs: boolean, i18n: boolean, workflow: boolean, testsOnly: boolean }}
+ * @returns {{ code: boolean, docs: boolean, i18n: boolean, workflow: boolean, nonWorkflowCode: boolean, testsOnly: boolean }}
  */
 export function classifyPaths(files) {
   let code = false;
   let docs = false;
   let i18n = false;
   let workflow = false;
+  let nonWorkflowCode = false;
   // testsOnly (WS3.1 fast lane): every file lives under tests/ AND none is an e2e
   // spec — such a diff cannot change the served app, so the E2E matrix may skip.
   // Changing tests/e2e/** REQUIRES running e2e, so it is excluded from the shortcut.
@@ -86,14 +87,23 @@ export function classifyPaths(files) {
       f.startsWith("playwright.config.")
     ) {
       code = true;
+      nonWorkflowCode = true;
       continue;
     }
 
     // Fail-safe: unknown path class → code (do not skip heavy gates by accident).
     code = true;
+    nonWorkflowCode = true;
   }
 
-  return { code, docs, i18n, workflow, testsOnly: sawAnyFile && !sawNonTest && !sawE2eTest };
+  return {
+    code,
+    docs,
+    i18n,
+    workflow,
+    nonWorkflowCode,
+    testsOnly: sawAnyFile && !sawNonTest && !sawE2eTest,
+  };
 }
 
 function main() {
@@ -124,7 +134,7 @@ function main() {
   const c = classifyPaths(files);
   // GitHub Actions output format (also human-readable key=value).
   process.stdout.write(
-    `code=${c.code}\ndocs=${c.docs}\ni18n=${c.i18n}\nworkflow=${c.workflow}\ntestsOnly=${c.testsOnly}\n`
+    `code=${c.code}\ndocs=${c.docs}\ni18n=${c.i18n}\nworkflow=${c.workflow}\nnonWorkflowCode=${c.nonWorkflowCode}\ntestsOnly=${c.testsOnly}\n`
   );
 }
 
